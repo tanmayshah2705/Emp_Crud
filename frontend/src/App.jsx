@@ -1,36 +1,54 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import EmployeeList from './pages/EmployeeList';
 import StudentList from './pages/StudentList';
+import Login from './pages/Login';
+import * as AuthService from './services/AuthService';
 import './index.css';
 
 function App() {
+  const [user, setUser] = useState(AuthService.getCurrentUser());
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setUser(null);
+  };
+
   return (
     <Router>
       <div className="app-container">
-        <aside className="sidebar">
-          <div className="logo">
-            <span style={{ fontSize: '1.5rem' }}>🚀</span>
-            <span>EMP-CRUD</span>
-          </div>
-          <nav className="nav-links">
-            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              Dashboard
-            </NavLink>
-            <NavLink to="/employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              Employees
-            </NavLink>
-            <NavLink to="/students" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              Students
-            </NavLink>
-          </nav>
-        </aside>
+        {user && (
+          <aside className="sidebar">
+            <div className="logo">
+              <span style={{ fontSize: '1.5rem' }}>🚀</span>
+              <span>EMP-CRUD</span>
+            </div>
+            <nav className="nav-links">
+              <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                Dashboard
+              </NavLink>
+              <NavLink to="/employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                Employees
+              </NavLink>
+              <NavLink to="/students" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                Students
+              </NavLink>
+              <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Logged in as {user.name}</p>
+                <button className="btn btn-outline" style={{ width: '100%', color: 'var(--danger)' }} onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            </nav>
+          </aside>
+        )}
 
-        <main className="main-content">
+        <main className="main-content" style={{ marginLeft: user ? '0' : '0' }}>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/employees" element={<EmployeeList />} />
-            <Route path="/students" element={<StudentList />} />
+            <Route path="/login" element={!user ? <Login onLogin={setUser} /> : <Navigate to="/" />} />
+            <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+            <Route path="/employees" element={user ? <EmployeeList /> : <Navigate to="/login" />} />
+            <Route path="/students" element={user ? <StudentList /> : <Navigate to="/login" />} />
           </Routes>
         </main>
       </div>
