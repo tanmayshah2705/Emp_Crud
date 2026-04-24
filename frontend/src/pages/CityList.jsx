@@ -41,9 +41,28 @@ const CityList = () => {
     <div>
       <header className="header">
         <h1 className="title">Cities</h1>
-        <button className="btn btn-primary" onClick={() => { setFormData({ code: '', name: '', state: { code: '' } }); setIsEdit(false); setIsModalOpen(true); }}>
-          + Add City
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <input 
+            type="text" 
+            placeholder="Search by name..." 
+            className="form-control" 
+            style={{ width: '250px', marginBottom: 0 }}
+            onChange={(e) => {
+              const term = e.target.value.toLowerCase();
+              if (term === '') {
+                fetchCities();
+              } else {
+                setCities(cities.filter(c => c.name.toLowerCase().includes(term)));
+              }
+            }}
+          />
+          <button className="btn btn-outline" onClick={() => window.open(`${API_BASE}/cities/export/pdf`, '_blank')}>
+            📄 Export PDF
+          </button>
+          <button className="btn btn-primary" onClick={() => { setFormData({ code: '', name: '', state: { code: '' } }); setIsEdit(false); setIsModalOpen(true); }}>
+            + Add City
+          </button>
+        </div>
       </header>
       <div className="card">
         <table className="table-container">

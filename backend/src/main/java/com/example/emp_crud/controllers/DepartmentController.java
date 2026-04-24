@@ -6,11 +6,32 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import com.example.emp_crud.services.ReportService;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import java.io.ByteArrayInputStream;
 
 @RestController
 @RequestMapping("/api/departments")
 public class DepartmentController {
     @Autowired private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private ReportService reportService;
+
+    @GetMapping("/export/pdf")
+    public ResponseEntity<InputStreamResource> exportToPdf() {
+        ByteArrayInputStream bis = reportService.generateDepartmentReport();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "inline; filename=departments.pdf");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(bis));
+    }
 
     @GetMapping
     public List<Department> getAll() { return departmentRepository.findAll(); }

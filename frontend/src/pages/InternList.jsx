@@ -126,6 +126,9 @@ const InternList = () => {
               }
             }}
           />
+          <button className="btn btn-outline" onClick={() => window.open(`${INTERN_URL}/export/pdf`, '_blank')}>
+            📄 Export PDF
+          </button>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
             + Add Intern
           </button>

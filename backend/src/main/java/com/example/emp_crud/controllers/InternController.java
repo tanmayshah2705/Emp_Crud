@@ -7,6 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.example.emp_crud.services.ReportService;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import java.io.ByteArrayInputStream;
 
 @RestController
 @RequestMapping("/api/interns")
@@ -14,6 +19,22 @@ public class InternController {
 
     @Autowired
     private InternRepository internRepository;
+
+    @Autowired
+    private ReportService reportService;
+
+    @GetMapping("/export/pdf")
+    public ResponseEntity<InputStreamResource> exportToPdf() {
+        ByteArrayInputStream bis = reportService.generateInternReport();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "inline; filename=interns.pdf");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(bis));
+    }
 
     @GetMapping
     public List<Intern> getAllInterns() {
