@@ -119,7 +119,7 @@ const EmployeeList = () => {
               }
             }}
           />
-          <button className="btn btn-outline" onClick={() => window.open('http://localhost:8080/api/employees/export/pdf', '_blank')}>
+          <button className="btn btn-outline" onClick={() => window.open((import.meta.env.VITE_API_URL || 'http://localhost:8080/api') + '/employees/export/pdf', '_blank')}>
             📄 Export PDF
           </button>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
