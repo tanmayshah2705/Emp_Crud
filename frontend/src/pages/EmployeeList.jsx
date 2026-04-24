@@ -132,6 +132,7 @@ const EmployeeList = () => {
         <table className="table-container">
           <thead>
             <tr>
+              <th>S.No</th>
               <th>ID</th>
               <th>Name</th>
               <th>DOB</th>
@@ -142,8 +143,9 @@ const EmployeeList = () => {
             </tr>
           </thead>
           <tbody>
-            {employees.map((emp) => (
+            {employees.map((emp, index) => (
               <tr key={emp.empId}>
+                <td>{index + 1}</td>
                 <td>{emp.empId}</td>
                 <td>{emp.name}</td>
                 <td>{new Date(emp.dateOfBirth).toLocaleDateString()}</td>

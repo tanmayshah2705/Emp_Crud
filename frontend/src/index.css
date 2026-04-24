@@ -196,8 +196,21 @@ body {
   padding: 2rem;
   border-radius: var(--radius);
   width: 100%;
-  max-width: 500px;
+  max-width: 650px;
   box-shadow: var(--shadow-lg);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 
 /* Form Styles */
