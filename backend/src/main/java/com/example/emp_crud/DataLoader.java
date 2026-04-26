@@ -5,9 +5,9 @@ import com.example.emp_crud.repositories.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import java.sql.Date;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
-import java.util.Random;
 
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -125,10 +125,11 @@ public class DataLoader implements CommandLineRunner {
                     Attendance att = new Attendance();
                     att.setEmployeeId(emp.getEmpId());
                     att.setEmployeeName(emp.getName());
-                    att.setClockIn("09:00:00");
-                    att.setClockOut("18:00:00");
+                    att.setClockIn(LocalTime.of(9, 0));
+                    att.setClockOut(LocalTime.of(18, 0));
                     att.setTotalHours(9.0);
-                    att.setDate(java.time.LocalDate.now().minusDays(i).toString());
+                    att.setDate(LocalDate.now().minusDays(i));
+                    att.setStatus("PRESENT");
                     attendanceRepository.save(att);
                 }
             }
@@ -144,8 +145,8 @@ public class DataLoader implements CommandLineRunner {
                 lr.setEmployeeId(emp.getEmpId());
                 lr.setEmployeeName(emp.getName());
                 lr.setLeaveType(i % 2 == 0 ? "CASUAL" : "SICK");
-                lr.setStartDate("2024-05-" + (10 + i));
-                lr.setEndDate("2024-05-" + (12 + i));
+                lr.setStartDate(LocalDate.now().plusDays(10 + i));
+                lr.setEndDate(LocalDate.now().plusDays(12 + i));
                 lr.setReason(reasons[i % reasons.length]);
                 lr.setStatus(i % 3 == 0 ? "APPROVED" : (i % 3 == 1 ? "PENDING" : "REJECTED"));
                 leaveRequestRepository.save(lr);
@@ -202,7 +203,7 @@ public class DataLoader implements CommandLineRunner {
                     asset.setAssignedName(emp.getName());
                 }
                 asset.setAssetCondition(i % 4 == 0 ? "NEW" : "GOOD");
-                asset.setWarrantyExpiry("2026-12-31");
+                asset.setWarrantyExpiry(LocalDate.now().plusYears(1));
                 assetRepository.save(asset);
             }
             System.out.println("Seeded company assets.");

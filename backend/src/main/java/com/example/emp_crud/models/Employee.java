@@ -10,7 +10,7 @@ import java.sql.Date;
 @AllArgsConstructor
 public class Employee {
     @Id
-    @Column(name = "emp_id", length = 10)
+    @Column(name = "emp_id")
     private String empId;
 
     @Column(nullable = false, length = 50)
