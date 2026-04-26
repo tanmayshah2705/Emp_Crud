@@ -6,6 +6,8 @@ import InternList from './pages/InternList';
 import StateList from './pages/StateList';
 import CityList from './pages/CityList';
 import DepartmentList from './pages/DepartmentList';
+import LeaveRequestList from './pages/LeaveRequestList';
+import AttendanceList from './pages/AttendanceList';
 import Login from './pages/Login';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import * as AuthService from './services/AuthService';
@@ -47,6 +49,13 @@ function App() {
                   <NavLink to="/departments" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Departments</NavLink>
                   <NavLink to="/states" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>States</NavLink>
                   <NavLink to="/cities" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Cities</NavLink>
+                  
+                  <div style={{ marginTop: '1.5rem', marginBottom: '0.5rem', paddingLeft: '1rem' }}>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.05em', fontWeight: 'bold' }}>HR MANAGEMENT</p>
+                  </div>
+                  
+                  <NavLink to="/leave-requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Leave Requests</NavLink>
+                  <NavLink to="/attendance" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Attendance</NavLink>
                 </>
               )}
               
@@ -72,6 +81,8 @@ function App() {
             <Route path="/departments" element={user && !isEmployee ? <DepartmentList /> : <Navigate to="/" />} />
             <Route path="/states" element={user && !isEmployee ? <StateList /> : <Navigate to="/" />} />
             <Route path="/cities" element={user && !isEmployee ? <CityList /> : <Navigate to="/" />} />
+            <Route path="/leave-requests" element={user && !isEmployee ? <LeaveRequestList /> : <Navigate to="/" />} />
+            <Route path="/attendance" element={user && !isEmployee ? <AttendanceList /> : <Navigate to="/" />} />
           </Routes>
         </main>
       </div>
