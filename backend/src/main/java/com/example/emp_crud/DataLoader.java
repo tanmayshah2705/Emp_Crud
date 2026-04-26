@@ -1,8 +1,8 @@
 package com.example.emp_crud;
 
-import com.example.emp_crud.models.Admin;
+import com.example.emp_crud.models.User;
 import com.example.emp_crud.models.Intern;
-import com.example.emp_crud.repositories.AdminRepository;
+import com.example.emp_crud.repositories.UserRepository;
 import com.example.emp_crud.repositories.InternRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -10,19 +10,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataLoader implements CommandLineRunner {
 
-    private final AdminRepository adminRepository;
+    private final UserRepository userRepository;
     private final InternRepository internRepository;
 
-    public DataLoader(AdminRepository adminRepository, InternRepository internRepository) {
-        this.adminRepository = adminRepository;
+    public DataLoader(UserRepository userRepository, InternRepository internRepository) {
+        this.userRepository = userRepository;
         this.internRepository = internRepository;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        if (adminRepository.count() == 0) {
-            adminRepository.save(new Admin(null, "admin1", "admin123", "Admin One"));
-            adminRepository.save(new Admin(null, "admin2", "admin456", "Admin Two"));
+        if (userRepository.count() == 0) {
+            userRepository.save(new User(null, "admin1", "admin123", "Admin One", "SUPER_ADMIN", null));
+            userRepository.save(new User(null, "admin2", "admin456", "Admin Two", "SUPER_ADMIN", null));
             System.out.println("Seeded default admins.");
         }
 

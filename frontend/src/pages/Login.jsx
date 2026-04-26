@@ -36,14 +36,24 @@ const Login = ({ onLogin }) => {
   return (
     <div className="modal-overlay" style={{ background: 'var(--bg-main)', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 2000 }}>
       <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>{isLogin ? 'Admin Login' : 'Admin Signup'}</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>{isLogin ? 'Login' : 'Sign Up'}</h2>
         {error && <p style={{ color: 'var(--danger)', textAlign: 'center' }}>{error}</p>}
         <form onSubmit={handleSubmit}>
           {!isLogin && (
-            <div className="form-group">
-              <label>Full Name</label>
-              <input type="text" name="name" className="form-control" onChange={handleInputChange} required />
-            </div>
+            <>
+              <div className="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" className="form-control" onChange={handleInputChange} required />
+              </div>
+              <div className="form-group">
+                <label>Role</label>
+                <select name="role" className="form-control" onChange={handleInputChange} required defaultValue="EMPLOYEE">
+                  <option value="SUPER_ADMIN">Admin</option>
+                  <option value="HR_MANAGER">HR Manager</option>
+                  <option value="EMPLOYEE">Employee</option>
+                </select>
+              </div>
+            </>
           )}
           <div className="form-group">
             <label>Username</label>

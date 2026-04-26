@@ -3,11 +3,11 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "admin")
+@Table(name = "users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Admin {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,4 +20,10 @@ public class Admin {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
+    private String role; // e.g., SUPER_ADMIN, HR_MANAGER, EMPLOYEE
+
+    @Column(name = "employee_id")
+    private String employeeId; // Link to Employee if role is EMPLOYEE
 }

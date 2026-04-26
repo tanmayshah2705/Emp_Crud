@@ -7,6 +7,7 @@ import StateList from './pages/StateList';
 import CityList from './pages/CityList';
 import DepartmentList from './pages/DepartmentList';
 import Login from './pages/Login';
+import EmployeeDashboard from './pages/EmployeeDashboard';
 import * as AuthService from './services/AuthService';
 import './index.css';
 
@@ -20,6 +21,8 @@ function App() {
     setUser(null);
   };
 
+  const isEmployee = user?.role === 'EMPLOYEE';
+
   return (
     <Router>
       <div className="app-container">
@@ -31,16 +34,21 @@ function App() {
             </div>
             <nav className="nav-links">
               <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
-              <NavLink to="/employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Employees</NavLink>
-              <NavLink to="/interns" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Interns</NavLink>
               
-              <div style={{ marginTop: '1.5rem', marginBottom: '0.5rem', paddingLeft: '1rem' }}>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.05em', fontWeight: 'bold' }}>MASTER DATA</p>
-              </div>
-              
-              <NavLink to="/departments" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Departments</NavLink>
-              <NavLink to="/states" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>States</NavLink>
-              <NavLink to="/cities" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Cities</NavLink>
+              {!isEmployee && (
+                <>
+                  <NavLink to="/employees" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Employees</NavLink>
+                  <NavLink to="/interns" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Interns</NavLink>
+                  
+                  <div style={{ marginTop: '1.5rem', marginBottom: '0.5rem', paddingLeft: '1rem' }}>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.05em', fontWeight: 'bold' }}>MASTER DATA</p>
+                  </div>
+                  
+                  <NavLink to="/departments" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Departments</NavLink>
+                  <NavLink to="/states" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>States</NavLink>
+                  <NavLink to="/cities" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Cities</NavLink>
+                </>
+              )}
               
               <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Logged in as {user.name}</p>
@@ -53,12 +61,17 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/login" element={!user ? <Login onLogin={setUser} /> : <Navigate to="/" />} />
-            <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/employees" element={user ? <EmployeeList /> : <Navigate to="/login" />} />
-            <Route path="/interns" element={user ? <InternList /> : <Navigate to="/login" />} />
-            <Route path="/departments" element={user ? <DepartmentList /> : <Navigate to="/login" />} />
-            <Route path="/states" element={user ? <StateList /> : <Navigate to="/login" />} />
-            <Route path="/cities" element={user ? <CityList /> : <Navigate to="/login" />} />
+            
+            <Route path="/" element={
+              !user ? <Navigate to="/login" /> : 
+              isEmployee ? <EmployeeDashboard user={user} /> : <Dashboard />
+            } />
+            
+            <Route path="/employees" element={user && !isEmployee ? <EmployeeList /> : <Navigate to="/" />} />
+            <Route path="/interns" element={user && !isEmployee ? <InternList /> : <Navigate to="/" />} />
+            <Route path="/departments" element={user && !isEmployee ? <DepartmentList /> : <Navigate to="/" />} />
+            <Route path="/states" element={user && !isEmployee ? <StateList /> : <Navigate to="/" />} />
+            <Route path="/cities" element={user && !isEmployee ? <CityList /> : <Navigate to="/" />} />
           </Routes>
         </main>
       </div>
@@ -81,7 +94,7 @@ const Dashboard = () => {
 
   return (
     <div>
-      <header className="header"><h1 className="title">Dashboard</h1></header>
+      <header className="header"><h1 className="title">Admin Dashboard</h1></header>
       <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
         <StatCard title="Total Employees" count={stats.employees} color="#6366f1" />
         <StatCard title="Total Interns" count={stats.interns} color="#10b981" />
