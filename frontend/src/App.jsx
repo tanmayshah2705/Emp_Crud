@@ -190,7 +190,7 @@ const NotificationBell = ({ notifications, setNotifications }) => {
 };
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({ employees: 0, interns: 0, departments: 0, cities: 0, states: 0, deptDistribution: [] });
+  const [stats, setStats] = useState({ employees: 0, interns: 0, departments: 0, cities: 0, states: 0 });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -214,37 +214,9 @@ const Dashboard = () => {
         <StatCard title="States" count={stats.states} color="#8b5cf6" />
       </div>
 
-      <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
-        <div className="card glass-card">
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Employee Distribution by Department</h3>
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <BarChart data={stats.deptDistribution}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="card glass-card">
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Departmental Overview</h3>
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie data={stats.deptDistribution} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {stats.deptDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      <div className="card glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Welcome to HRMS Pro</h2>
+        <p style={{ color: 'var(--text-muted)' }}>Use the sidebar to manage employees, payroll, and more.</p>
       </div>
     </div>
   );

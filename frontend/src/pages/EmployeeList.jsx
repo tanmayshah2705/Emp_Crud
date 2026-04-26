@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as EmployeeService from '../services/EmployeeService';
 import axios from 'axios';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -16,7 +17,11 @@ const EmployeeList = () => {
     salary: ''
   });
   const [isUploading, setIsUploading] = useState(false);
+  const [attendanceData, setAttendanceData] = useState(null);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api');
 
   useEffect(() => {
     fetchEmployees();
@@ -62,8 +67,29 @@ const EmployeeList = () => {
     setIsModalOpen(true);
   };
 
+  const handleOpenAttendanceModal = async (employee) => {
+    setCurrentEmployee(employee);
+    try {
+      const response = await axios.get(`${API_BASE}/attendance/employee/${employee.empId}`);
+      // Format data for chart: sort by date and map to { date, hours }
+      const formatted = response.data
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map(a => ({
+          date: new Date(a.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          hours: a.totalHours || 0,
+          status: a.status
+        }));
+      setAttendanceData(formatted);
+      setIsAttendanceModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      alert('Could not fetch attendance data');
+    }
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setIsAttendanceModalOpen(false);
     setCurrentEmployee(null);
   };
 
@@ -112,7 +138,7 @@ const EmployeeList = () => {
 
     setIsUploading(true);
     try {
-      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:8080/api') + '/bulk/employees', formData, {
+      const response = await axios.post(`${API_BASE}/bulk/employees`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert(`Success: ${response.data.success} employees uploaded. Errors: ${response.data.errors.length}`);
@@ -145,7 +171,7 @@ const EmployeeList = () => {
               }
             }}
           />
-          <button className="btn btn-outline" onClick={() => window.open((import.meta.env.VITE_API_URL || 'http://localhost:8080/api') + '/employees/export/pdf', '_blank')}>
+          <button className="btn btn-outline" onClick={() => window.open(`${API_BASE}/employees/export/pdf`, '_blank')}>
             📄 Export PDF
           </button>
           <input 
@@ -194,6 +220,7 @@ const EmployeeList = () => {
                 <td>₹{emp.salary.toLocaleString()}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-outline" onClick={() => handleOpenAttendanceModal(emp)}>📊 Attendance</button>
                     <button className="btn btn-outline" onClick={() => handleOpenModal(emp)}>Edit</button>
                     <button className="btn btn-outline" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(emp.empId)}>Delete</button>
                   </div>
@@ -203,6 +230,87 @@ const EmployeeList = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Attendance Visual Modal */}
+      {isAttendanceModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '800px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2>Attendance Insights: {currentEmployee?.name}</h2>
+              <button className="btn btn-icon" onClick={handleCloseModal}>✕</button>
+            </div>
+            
+            <div className="grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+              <div className="card" style={{ background: '#f8fafc' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Summary</h3>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Total Days Tracked</p>
+                  <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{attendanceData.length}</p>
+                </div>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Avg. Hours/Day</p>
+                  <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
+                    {(attendanceData.reduce((acc, curr) => acc + curr.hours, 0) / (attendanceData.length || 1)).toFixed(1)}h
+                  </p>
+                </div>
+              </div>
+
+              <div className="card">
+                <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Working Hours (Daily)</h3>
+                <div style={{ width: '100%', height: 250 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={attendanceData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" fontSize={10} />
+                      <YAxis fontSize={10} />
+                      <Tooltip />
+                      <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            <div className="card" style={{ marginTop: '1.5rem' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Log History</h3>
+              <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <table className="table-container" style={{ fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Hours</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceData.slice().reverse().map((a, i) => (
+                      <tr key={i}>
+                        <td>{a.date}</td>
+                        <td>{a.hours}h</td>
+                        <td>
+                          <span style={{ 
+                            padding: '2px 8px', 
+                            borderRadius: '10px', 
+                            fontSize: '0.7rem', 
+                            background: a.status === 'PRESENT' ? '#dcfce7' : '#fee2e2',
+                            color: a.status === 'PRESENT' ? '#166534' : '#991b1b'
+                          }}>
+                            {a.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'right', marginTop: '1.5rem' }}>
+              <button className="btn btn-primary" onClick={handleCloseModal}>Close View</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="modal-overlay">
