@@ -214,10 +214,6 @@ const Dashboard = () => {
         <StatCard title="States" count={stats.states} color="#8b5cf6" />
       </div>
 
-      <div className="card glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2 style={{ marginBottom: '1rem' }}>Welcome to HRMS Pro</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Use the sidebar to manage employees, payroll, and more.</p>
-      </div>
     </div>
   );
 };
