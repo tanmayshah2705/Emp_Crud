@@ -22,7 +22,8 @@ public class EmpCrudApplication {
 				// In production, you should restrict this to your frontend URL.
 				registry.addMapping("/**")
 						.allowedOrigins("*")
-						.allowedMethods("*");
+						.allowedMethods("*")
+						.allowedHeaders("*");
 			}
 		};
 	}
