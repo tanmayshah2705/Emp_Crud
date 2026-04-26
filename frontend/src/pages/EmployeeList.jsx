@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as EmployeeService from '../services/EmployeeService';
+import axios from 'axios';
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -14,6 +15,8 @@ const EmployeeList = () => {
     gender: 'M',
     salary: ''
   });
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -100,6 +103,29 @@ const EmployeeList = () => {
     }
   };
 
+  const handleBulkUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsUploading(true);
+    try {
+      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:8080/api') + '/bulk/employees', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert(`Success: ${response.data.success} employees uploaded. Errors: ${response.data.errors.length}`);
+      fetchEmployees();
+    } catch (error) {
+      console.error('Bulk upload error:', error);
+      alert('Error uploading file: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div>
       <header className="header">
@@ -121,6 +147,20 @@ const EmployeeList = () => {
           />
           <button className="btn btn-outline" onClick={() => window.open((import.meta.env.VITE_API_URL || 'http://localhost:8080/api') + '/employees/export/pdf', '_blank')}>
             📄 Export PDF
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            style={{ display: 'none' }} 
+            accept=".csv" 
+            onChange={handleBulkUpload} 
+          />
+          <button 
+            className="btn btn-outline" 
+            onClick={() => fileInputRef.current.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? '⌛ Uploading...' : '📁 Bulk CSV Upload'}
           </button>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
             + Add Employee

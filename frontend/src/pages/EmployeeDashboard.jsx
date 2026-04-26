@@ -8,16 +8,22 @@ const EmployeeDashboard = ({ user }) => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [payslips, setPayslips] = useState([]);
+  const [myRecognitions, setMyRecognitions] = useState([]);
+  const [allEmployees, setAllEmployees] = useState([]);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isRecognitionModalOpen, setIsRecognitionModalOpen] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ leaveType: 'CASUAL', startDate: '', endDate: '', reason: '' });
   const [expenseForm, setExpenseForm] = useState({ category: 'TRAVEL', amount: '', description: '' });
+  const [recognitionForm, setRecognitionForm] = useState({ toUser: '', toName: '', message: '', points: 10 });
 
   useEffect(() => {
     fetchTodayAttendance();
     fetchMyLeaves();
     fetchMyExpenses();
     fetchMyPayslips();
+    fetchMyRecognitions();
+    fetchAllEmployees();
   }, []);
 
   const fetchTodayAttendance = async () => {
@@ -93,6 +99,36 @@ const EmployeeDashboard = ({ user }) => {
       setIsExpenseModalOpen(false);
       setExpenseForm({ category: 'TRAVEL', amount: '', description: '' });
       fetchMyExpenses();
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchMyRecognitions = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/recognitions/user/${user.employeeId || user.username}`);
+      setMyRecognitions(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchAllEmployees = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/employees`);
+      setAllEmployees(res.data.filter(emp => emp.empId !== (user.employeeId || user.username)));
+    } catch (err) { console.error(err); }
+  };
+
+  const handleRecognitionSubmit = async (e) => {
+    e.preventDefault();
+    const targetEmp = allEmployees.find(emp => emp.empId === recognitionForm.toUser);
+    try {
+      await axios.post(`${API_BASE}/recognitions`, {
+        ...recognitionForm,
+        toName: targetEmp ? targetEmp.name : recognitionForm.toUser,
+        fromUser: user.employeeId || user.username,
+        fromName: user.name
+      });
+      setIsRecognitionModalOpen(false);
+      setRecognitionForm({ toUser: '', toName: '', message: '', points: 10 });
+      alert('Kudos sent successfully! 🌟');
     } catch (err) { console.error(err); }
   };
 
@@ -292,6 +328,59 @@ const EmployeeDashboard = ({ user }) => {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-outline" onClick={() => setIsExpenseModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* My Recognitions Section */}
+      <div className="card" style={{ marginTop: '1.5rem', background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(249,250,251,1) 100%)', border: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3>🌟 My Recognition & Kudos</h3>
+          <button className="btn btn-primary" onClick={() => setIsRecognitionModalOpen(true)}>✨ Give Kudos</button>
+        </div>
+        <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+          {myRecognitions.map((rec) => (
+            <div key={rec.id} className="glass-card" style={{ padding: '1rem', borderLeft: '4px solid var(--success)' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>From {rec.fromName}</p>
+              <p style={{ margin: '0.5rem 0', fontStyle: 'italic' }}>"{rec.message}"</p>
+              <span className="badge" style={{ background: 'var(--success-bg)', color: 'var(--success)', fontSize: '0.7rem' }}>+{rec.points} Points</span>
+            </div>
+          ))}
+          {myRecognitions.length === 0 && (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)' }}>
+              No kudos received yet. Keep up the great work!
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recognition Modal */}
+      {isRecognitionModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 style={{ marginBottom: '1.5rem' }}>✨ Recognize a Colleague</h2>
+            <form onSubmit={handleRecognitionSubmit}>
+              <div className="form-group">
+                <label>Select Colleague</label>
+                <select className="form-control" value={recognitionForm.toUser}
+                  onChange={(e) => setRecognitionForm({ ...recognitionForm, toUser: e.target.value })} required>
+                  <option value="">Select an employee...</option>
+                  {allEmployees.map(emp => (
+                    <option key={emp.empId} value={emp.empId}>{emp.name} ({emp.empId})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Message</label>
+                <textarea className="form-control" rows="3" value={recognitionForm.message}
+                  onChange={(e) => setRecognitionForm({ ...recognitionForm, message: e.target.value })} required
+                  placeholder="Tell them why they are awesome..."
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+                <button type="button" className="btn btn-outline" onClick={() => setIsRecognitionModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Send Kudos 🚀</button>
               </div>
             </form>
           </div>

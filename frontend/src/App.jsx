@@ -11,6 +11,8 @@ import AttendanceList from './pages/AttendanceList';
 import PayslipList from './pages/PayslipList';
 import ExpenseList from './pages/ExpenseList';
 import AssetList from './pages/AssetList';
+import AuditLogList from './pages/AuditLogList';
+import RecognitionWall from './pages/RecognitionWall';
 import Login from './pages/Login';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import * as AuthService from './services/AuthService';
@@ -72,8 +74,20 @@ function App() {
                   </div>
                   
                   <NavLink to="/assets" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Company Assets</NavLink>
+                  
+                  <div style={{ marginTop: '1.5rem', marginBottom: '0.5rem', paddingLeft: '1rem' }}>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.05em', fontWeight: 'bold' }}>SYSTEM</p>
+                  </div>
+                  
+                  <NavLink to="/audit-logs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Audit Trails</NavLink>
                 </>
               )}
+              
+              <div style={{ marginTop: '1.5rem', marginBottom: '0.5rem', paddingLeft: '1rem' }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.05em', fontWeight: 'bold' }}>COMMUNITY</p>
+              </div>
+              
+              <NavLink to="/recognition" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Recognition Wall</NavLink>
               
               <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Logged in as {user.name}</p>
@@ -102,6 +116,8 @@ function App() {
             <Route path="/payslips" element={user && !isEmployee ? <PayslipList /> : <Navigate to="/" />} />
             <Route path="/expenses" element={user && !isEmployee ? <ExpenseList /> : <Navigate to="/" />} />
             <Route path="/assets" element={user && !isEmployee ? <AssetList /> : <Navigate to="/" />} />
+            <Route path="/audit-logs" element={user && !isEmployee ? <AuditLogList /> : <Navigate to="/" />} />
+            <Route path="/recognition" element={user ? <RecognitionWall /> : <Navigate to="/login" />} />
           </Routes>
         </main>
       </div>
