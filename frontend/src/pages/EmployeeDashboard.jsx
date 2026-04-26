@@ -6,12 +6,18 @@ const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api');
 const EmployeeDashboard = ({ user }) => {
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [payslips, setPayslips] = useState([]);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ leaveType: 'CASUAL', startDate: '', endDate: '', reason: '' });
+  const [expenseForm, setExpenseForm] = useState({ category: 'TRAVEL', amount: '', description: '' });
 
   useEffect(() => {
     fetchTodayAttendance();
     fetchMyLeaves();
+    fetchMyExpenses();
+    fetchMyPayslips();
   }, []);
 
   const fetchTodayAttendance = async () => {
@@ -59,6 +65,34 @@ const EmployeeDashboard = ({ user }) => {
       setIsLeaveModalOpen(false);
       setLeaveForm({ leaveType: 'CASUAL', startDate: '', endDate: '', reason: '' });
       fetchMyLeaves();
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchMyExpenses = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/expenses/employee/${user.employeeId || user.username}`);
+      setExpenses(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchMyPayslips = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/payslips/employee/${user.employeeId || user.username}`);
+      setPayslips(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const handleExpenseSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_BASE}/expenses`, {
+        ...expenseForm,
+        employeeId: user.employeeId || user.username,
+        employeeName: user.name
+      });
+      setIsExpenseModalOpen(false);
+      setExpenseForm({ category: 'TRAVEL', amount: '', description: '' });
+      fetchMyExpenses();
     } catch (err) { console.error(err); }
   };
 
@@ -173,6 +207,91 @@ const EmployeeDashboard = ({ user }) => {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-outline" onClick={() => setIsLeaveModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Submit Request</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* My Expenses Section */}
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3>💸 My Expenses</h3>
+          <button className="btn btn-primary" onClick={() => setIsExpenseModalOpen(true)}>+ Submit Expense</button>
+        </div>
+        <table className="table-container">
+          <thead>
+            <tr><th>Category</th><th>Amount</th><th>Description</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {expenses.map((e) => (
+              <tr key={e.id} className="fade-in">
+                <td>{e.category}</td>
+                <td style={{ fontWeight: 'bold' }}>₹{e.amount?.toLocaleString()}</td>
+                <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.description}</td>
+                <td>{getStatusBadge(e.status)}</td>
+              </tr>
+            ))}
+            {expenses.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No expenses submitted</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      {/* My Payslips Section */}
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <h3 style={{ marginBottom: '1rem' }}>💰 My Payslips</h3>
+        <table className="table-container">
+          <thead>
+            <tr><th>Month</th><th>Year</th><th>Base</th><th>Deductions</th><th>Bonus</th><th>Net Pay</th></tr>
+          </thead>
+          <tbody>
+            {payslips.map((p) => (
+              <tr key={p.id} className="fade-in">
+                <td>{p.month}</td>
+                <td>{p.year}</td>
+                <td>₹{p.baseSalary?.toLocaleString()}</td>
+                <td style={{ color: '#ef4444' }}>-₹{p.deductions?.toLocaleString()}</td>
+                <td style={{ color: '#10b981' }}>+₹{p.bonus?.toLocaleString()}</td>
+                <td style={{ fontWeight: 'bold' }}>₹{p.netPay?.toLocaleString()}</td>
+              </tr>
+            ))}
+            {payslips.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No payslips available</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Expense Submit Modal */}
+      {isExpenseModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 style={{ marginBottom: '1.5rem' }}>Submit Expense</h2>
+            <form onSubmit={handleExpenseSubmit}>
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Category</label>
+                  <select className="form-control" value={expenseForm.category}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })} required>
+                    <option value="TRAVEL">Travel</option>
+                    <option value="MEALS">Meals</option>
+                    <option value="OFFICE_SUPPLIES">Office Supplies</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Amount (₹)</label>
+                  <input type="number" className="form-control" value={expenseForm.amount}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: parseFloat(e.target.value) })} required />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea className="form-control" rows="3" value={expenseForm.description}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })} required
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+                <button type="button" className="btn btn-outline" onClick={() => setIsExpenseModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Submit</button>
               </div>
             </form>
           </div>
