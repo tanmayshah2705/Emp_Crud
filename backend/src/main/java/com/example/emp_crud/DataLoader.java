@@ -25,6 +25,7 @@ public class DataLoader implements CommandLineRunner {
     private final AssetRepository assetRepository;
     private final RecognitionRepository recognitionRepository;
     private final AuditLogRepository auditLogRepository;
+    private final NotificationRepository notificationRepository;
 
     public DataLoader(UserRepository userRepository, 
                       InternRepository internRepository,
@@ -38,7 +39,8 @@ public class DataLoader implements CommandLineRunner {
                       PayslipRepository payslipRepository,
                       AssetRepository assetRepository,
                       RecognitionRepository recognitionRepository,
-                      AuditLogRepository auditLogRepository) {
+                      AuditLogRepository auditLogRepository,
+                      NotificationRepository notificationRepository) {
         this.userRepository = userRepository;
         this.internRepository = internRepository;
         this.employeeRepository = employeeRepository;
@@ -52,6 +54,7 @@ public class DataLoader implements CommandLineRunner {
         this.assetRepository = assetRepository;
         this.recognitionRepository = recognitionRepository;
         this.auditLogRepository = auditLogRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @Override
@@ -62,7 +65,6 @@ public class DataLoader implements CommandLineRunner {
             for (String name : stateNames) {
                 stateRepository.save(new State(null, name));
             }
-            System.out.println("Seeded states.");
         }
 
         // 2. Seed Cities
@@ -76,7 +78,6 @@ public class DataLoader implements CommandLineRunner {
                     cityRepository.save(new City(null, cityName, states.get(i)));
                 }
             }
-            System.out.println("Seeded cities.");
         }
 
         // 3. Seed Departments
@@ -85,7 +86,6 @@ public class DataLoader implements CommandLineRunner {
             for (String name : deptNames) {
                 departmentRepository.save(new Department(null, name));
             }
-            System.out.println("Seeded departments.");
         }
 
         // 4. Seed Employees
@@ -102,26 +102,27 @@ public class DataLoader implements CommandLineRunner {
                 emp.setSalary(60000 + (i * 2000));
                 employeeRepository.save(emp);
             }
-            System.out.println("Seeded employees.");
         }
 
-        // 5. Seed Users
-        if (userRepository.count() == 0) {
+        // 5. Seed Users (Critical Fix for Credentials)
+        if (userRepository.findByUsername("admin1").isEmpty()) {
             userRepository.save(new User(null, "admin1", "admin123", "Admin One", "SUPER_ADMIN", null));
+        }
+        if (userRepository.findByUsername("hr1").isEmpty()) {
             userRepository.save(new User(null, "hr1", "hr123", "HR Manager", "HR_MANAGER", null));
-            List<Employee> employees = employeeRepository.findAll();
-            for (Employee emp : employees) {
+        }
+        
+        List<Employee> employees = employeeRepository.findAll();
+        for (Employee emp : employees) {
+            if (userRepository.findByUsername(emp.getEmpId().toLowerCase()).isEmpty()) {
                 userRepository.save(new User(null, emp.getEmpId().toLowerCase(), "pass123", emp.getName(), "EMPLOYEE", emp.getEmpId()));
             }
-            System.out.println("Seeded users.");
         }
 
-        List<Employee> employees = employeeRepository.findAll();
-
-        // 6. Seed Attendance (Last 5 days for each employee)
+        // 6. Seed Attendance
         if (attendanceRepository.count() == 0) {
             for (Employee emp : employees) {
-                for (int i = 1; i <= 5; i++) {
+                for (int i = 1; i <= 10; i++) {
                     Attendance att = new Attendance();
                     att.setEmployeeId(emp.getEmpId());
                     att.setEmployeeName(emp.getName());
@@ -133,120 +134,41 @@ public class DataLoader implements CommandLineRunner {
                     attendanceRepository.save(att);
                 }
             }
-            System.out.println("Seeded attendance logs.");
         }
 
-        // 7. Seed Leave Requests
+        // 7. Seed Leave Requests & Notifications
         if (leaveRequestRepository.count() == 0) {
-            String[] reasons = {"Family Function", "Medical Leave", "Personal Work", "Vacation"};
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 5; i++) {
                 Employee emp = employees.get(i % employees.size());
                 LeaveRequest lr = new LeaveRequest();
                 lr.setEmployeeId(emp.getEmpId());
                 lr.setEmployeeName(emp.getName());
-                lr.setLeaveType(i % 2 == 0 ? "CASUAL" : "SICK");
-                lr.setStartDate(LocalDate.now().plusDays(10 + i));
-                lr.setEndDate(LocalDate.now().plusDays(12 + i));
-                lr.setReason(reasons[i % reasons.length]);
-                lr.setStatus(i % 3 == 0 ? "APPROVED" : (i % 3 == 1 ? "PENDING" : "REJECTED"));
+                lr.setLeaveType("CASUAL");
+                lr.setStartDate(LocalDate.now().plusDays(5));
+                lr.setEndDate(LocalDate.now().plusDays(7));
+                lr.setReason("Personal Work");
+                lr.setStatus("PENDING");
                 leaveRequestRepository.save(lr);
+                
+                // Add notification for HR
+                notificationRepository.save(new Notification(null, "hr1", "New leave request from " + emp.getName(), false, java.time.LocalDateTime.now()));
             }
-            System.out.println("Seeded leave requests.");
         }
 
-        // 8. Seed Expenses
-        if (expenseRepository.count() == 0) {
-            String[] cats = {"TRAVEL", "MEALS", "OFFICE_SUPPLIES"};
-            for (int i = 0; i < 10; i++) {
-                Employee emp = employees.get(i % employees.size());
-                Expense exp = new Expense();
-                exp.setEmployeeId(emp.getEmpId());
-                exp.setEmployeeName(emp.getName());
-                exp.setCategory(cats[i % cats.length]);
-                exp.setAmount(500.0 * (i + 1));
-                exp.setDescription("Sample expense for " + cats[i % cats.length].toLowerCase());
-                exp.setStatus(i % 2 == 0 ? "APPROVED" : "PENDING");
-                exp.setApprovedBy(i % 2 == 0 ? "Admin" : null);
-                expenseRepository.save(exp);
-            }
-            System.out.println("Seeded expenses.");
-        }
-
-        // 9. Seed Payslips
-        if (payslipRepository.count() == 0) {
-            for (int i = 0; i < 10; i++) {
-                Employee emp = employees.get(i % employees.size());
-                Payslip p = new Payslip();
-                p.setEmployeeId(emp.getEmpId());
-                p.setEmployeeName(emp.getName());
-                p.setMonth("April");
-                p.setYear(2024);
-                p.setBaseSalary(Double.valueOf(emp.getSalary()));
-                p.setDeductions(2000.0);
-                p.setBonus(5000.0);
-                p.setNetPay(p.getBaseSalary() - p.getDeductions() + p.getBonus());
-                payslipRepository.save(p);
-            }
-            System.out.println("Seeded payslips.");
-        }
-
-        // 10. Seed Company Assets
+        // 8. Seed Assets
         if (assetRepository.count() == 0) {
-            String[] types = {"LAPTOP", "MONITOR", "PHONE", "KEYCARD"};
-            for (int i = 0; i < 12; i++) {
+            for (int i = 0; i < 5; i++) {
                 CompanyAsset asset = new CompanyAsset();
-                asset.setAssetType(types[i % types.length]);
-                asset.setSerialNumber("SN-XYZ-" + (1000 + i));
-                if (i < 8) {
-                    Employee emp = employees.get(i);
-                    asset.setAssignedTo(emp.getEmpId());
-                    asset.setAssignedName(emp.getName());
-                }
-                asset.setAssetCondition(i % 4 == 0 ? "NEW" : "GOOD");
+                asset.setAssetType("LAPTOP");
+                asset.setSerialNumber("SN-" + (5000 + i));
+                asset.setAssignedTo(employees.get(i).getEmpId());
+                asset.setAssignedName(employees.get(i).getName());
+                asset.setAssetCondition("GOOD");
                 asset.setWarrantyExpiry(LocalDate.now().plusYears(1));
                 assetRepository.save(asset);
             }
-            System.out.println("Seeded company assets.");
         }
-
-        // 11. Seed Recognitions
-        if (recognitionRepository.count() == 0) {
-            for (int i = 0; i < 8; i++) {
-                Employee from = employees.get(i % employees.size());
-                Employee to = employees.get((i + 1) % employees.size());
-                Recognition rec = new Recognition();
-                rec.setFromUser(from.getEmpId());
-                rec.setFromName(from.getName());
-                rec.setToUser(to.getEmpId());
-                rec.setToName(to.getName());
-                rec.setMessage("Great work on the project! 🚀");
-                rec.setPoints(10 * (i + 1));
-                recognitionRepository.save(rec);
-            }
-            System.out.println("Seeded recognition kudos.");
-        }
-
-        // 12. Seed Audit Logs
-        if (auditLogRepository.count() == 0) {
-            for (int i = 0; i < 15; i++) {
-                AuditLog log = new AuditLog();
-                log.setEntity(i % 2 == 0 ? "EMPLOYEE" : "DEPARTMENT");
-                log.setEntityId("E10" + (i % 10));
-                log.setAction(i % 3 == 0 ? "CREATE" : (i % 3 == 1 ? "UPDATE" : "DELETE"));
-                log.setChangedBy("admin1");
-                log.setNewValue("Sample modification data " + i);
-                auditLogRepository.save(log);
-            }
-            System.out.println("Seeded audit logs.");
-        }
-
-        // 13. Seed Interns
-        if (internRepository.count() == 0) {
-            String[] names = {"Rahul", "Priya", "Amit", "Sonia", "Karan", "Deepika", "Ranveer", "Alia", "Sid", "Kiara"};
-            for (int i = 0; i < names.length; i++) {
-                internRepository.save(new Intern(null, names[i], names[i].toLowerCase() + "@intern.com", i % 2 == 0 ? "M" : "F", "2002-01-01", null, "Testing", 15000.0, "6 Months"));
-            }
-            System.out.println("Seeded interns.");
-        }
+        
+        System.out.println("DataLoader: Database sync complete with latest credentials.");
     }
 }

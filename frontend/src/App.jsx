@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import EmployeeList from './pages/EmployeeList';
 import InternList from './pages/InternList';
 import StateList from './pages/StateList';
@@ -19,9 +20,11 @@ import * as AuthService from './services/AuthService';
 import './index.css';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api');
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 function App() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
+  const [notifications, setNotifications] = useState([]);
   const location = useLocation();
   const mainContentRef = React.useRef(null);
 
@@ -30,6 +33,20 @@ function App() {
       mainContentRef.current.scrollTo(0, 0);
     }
   }, [location]);
+
+  useEffect(() => {
+    if (user) {
+      const fetchNotifications = async () => {
+        try {
+          const res = await axios.get(`${API_BASE}/notifications/${user.username}`);
+          setNotifications(res.data);
+        } catch (e) { console.error(e); }
+      };
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const handleLogout = () => {
     AuthService.logout();
@@ -42,9 +59,12 @@ function App() {
     <div className="app-container">
       {user && (
         <aside className="sidebar">
-          <div className="logo">
-            <span style={{ fontSize: '1.5rem' }}>🚀</span>
-            <span>EMP-CRUD</span>
+          <div className="logo" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>🚀</span>
+              <span>EMP-CRUD</span>
+            </div>
+            <NotificationBell notifications={notifications} setNotifications={setNotifications} />
           </div>
           <nav className="nav-links">
             <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
@@ -131,8 +151,46 @@ function App() {
   );
 }
 
+const NotificationBell = ({ notifications, setNotifications }) => {
+  const [show, setShow] = useState(false);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAsRead = async (id) => {
+    try {
+      await axios.put(`${API_BASE}/notifications/${id}/read`);
+      setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (e) { console.error(e); }
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setShow(!show)} className="btn-icon" style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
+        <span style={{ fontSize: '1.2rem' }}>🔔</span>
+        {unreadCount > 0 && (
+          <span style={{ position: 'absolute', top: -5, right: -5, background: 'var(--danger)', color: 'white', borderRadius: '50%', padding: '2px 6px', fontSize: '0.6rem' }}>
+            {unreadCount}
+          </span>
+        )}
+      </button>
+      {show && (
+        <div className="card glass-card" style={{ position: 'absolute', top: '100%', right: 0, width: '300px', maxHeight: '400px', overflowY: 'auto', zIndex: 100, padding: '1rem', marginTop: '0.5rem' }}>
+          <h4 style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Notifications</h4>
+          {notifications.length === 0 ? <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No notifications</p> : 
+            notifications.map(n => (
+              <div key={n.id} onClick={() => markAsRead(n.id)} style={{ padding: '0.75rem', borderRadius: 'var(--radius)', background: n.read ? 'transparent' : '#f1f5f9', marginBottom: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <p style={{ fontWeight: n.read ? '400' : '600' }}>{n.message}</p>
+                <small style={{ color: 'var(--text-muted)' }}>{new Date(n.createdAt).toLocaleString()}</small>
+              </div>
+            ))
+          }
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Dashboard = () => {
-  const [stats, setStats] = useState({ employees: 0, interns: 0, departments: 0, cities: 0, states: 0 });
+  const [stats, setStats] = useState({ employees: 0, interns: 0, departments: 0, cities: 0, states: 0, deptDistribution: [] });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -147,12 +205,46 @@ const Dashboard = () => {
   return (
     <div>
       <header className="header"><h1 className="title">Admin Dashboard</h1></header>
-      <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+      
+      <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <StatCard title="Total Employees" count={stats.employees} color="#6366f1" />
         <StatCard title="Total Interns" count={stats.interns} color="#10b981" />
         <StatCard title="Departments" count={stats.departments} color="#f59e0b" />
         <StatCard title="Cities" count={stats.cities} color="#ef4444" />
         <StatCard title="States" count={stats.states} color="#8b5cf6" />
+      </div>
+
+      <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+        <div className="card glass-card">
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Employee Distribution by Department</h3>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <BarChart data={stats.deptDistribution}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" fontSize={12} />
+                <YAxis fontSize={12} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="card glass-card">
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Departmental Overview</h3>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={stats.deptDistribution} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {stats.deptDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -160,8 +252,8 @@ const Dashboard = () => {
 
 const StatCard = ({ title, count, color }) => (
   <div className="card glass-card" style={{ borderLeft: `5px solid ${color}` }}>
-    <h3 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{title}</h3>
-    <p style={{ fontSize: '2rem', fontWeight: 'bold', color: color }}>{count}</p>
+    <h3 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{title}</h3>
+    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: color }}>{count}</p>
   </div>
 );
 
